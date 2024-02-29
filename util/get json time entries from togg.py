@@ -5,7 +5,7 @@ from base64 import b64encode
 fecha_inicio = "2024-02-25"
 fecha_fin = "2024-02-27"
 api_token = b"0e435e25de0761bcba5c05a0a755655f:api_token" #en bytes
-fichero_salida = "pruebas/sal1.json"
+fichero_salida = "tmp/sal1.json"
 
 # Esta URL parece que solo admite consultar 1 solo día (poniendo el día de antes y el de después)
 url="https://api.track.toggl.com/api/v9/me/time_entries?start_date="+fecha_inicio+"&end_date="+fecha_fin
