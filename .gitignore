@@ -160,4 +160,4 @@ cython_debug/
 #.idea/
 
 # y mis ficheros de salida de pruebas
-sal*.json
+tmp/
