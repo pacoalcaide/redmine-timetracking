@@ -1,0 +1,6 @@
+{
+  "sonarlint.connectedMode.project": {
+    "connectionId": "pacoalcaide",
+    "projectKey": "pacoalcaide_redmine-timetracking"
+  }
+}
