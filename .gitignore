@@ -161,3 +161,4 @@ cython_debug/
 
 # y mis ficheros de salida de pruebas
 tmp/
+secrets.json
