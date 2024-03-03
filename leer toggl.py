@@ -2,6 +2,7 @@ import requests
 import json
 from base64 import b64encode
 import argparse
+from datetime import date
 
 def get_secrets():
     with open('secrets.json') as secrets_file:
@@ -9,13 +10,20 @@ def get_secrets():
 
     return secrets
 
-def fecha_hoy(string):
-    if string
-      return string
-    else
-      return today()
-    endif
+def fecha_hoy(date_param=None):
+  """
+  This function returns today's date if the parameter is null, otherwise it returns the parameter.
 
+  Args:
+      date_param: A date object or None.
+
+  Returns:
+      A date object representing today's date.
+  """
+  if date_param is None:
+    return date.today()
+  else:
+    return date_param
 
 def main():
     # recoger los argumentos
@@ -24,12 +32,12 @@ def main():
                     description='Lee los datos de Toggl',
                     epilog='Para descargarlos en un fichero CSV')
 
-    parser.add_argument('-i', '--fecha-inicio', help="Fecha Inicial", required=True, type=fecha_hoy)
-    parser.add_argument('-f', '--fecha-fin', help="Fecha Final", type=fecha_hoy)
+    parser.add_argument('-i', '--finicio', help="Fecha Inicial", type=fecha_hoy)
+    parser.add_argument('-f', '--ffin', help="Fecha Final", type=fecha_hoy)
     #parser.add_argument('-v', '--verbose',
     #                    action='store_true')
     args = parser.parse_args()
-    print(args)
+    print(args.finicio,args.ffin)
     
     # extraer los secretos
     secrets = get_secrets()
