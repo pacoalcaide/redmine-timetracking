@@ -1,0 +1,10 @@
+{
+  "des":{
+    "API_KEY_TOGGL": "0e435e25de0761bcba5c05a0a755655f",
+    "API_KEY_REDMINE": "399dedb5d3ca5a6b5ac230cd0d5d103e37ce9626" 
+  },
+  "pro":{
+    "API_KEY_TOGGL": "0e435e25de0761bcba5c05a0a755655f",
+    "API_KEY_REDMINE": "4eb8f9729f492a191b37dc9e112fe4006d8f8eee" 
+  }
+}

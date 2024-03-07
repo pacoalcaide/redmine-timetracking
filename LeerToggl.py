@@ -7,16 +7,16 @@ import argparse
 from datetime import datetime
 
 # obtener secretos
-def get_secrets():
-    with open('secrets.json', 'r') as secrets_file:
-        secrets = json.load(secrets_file)
+def get_entornos():
+    with open('entorno.json', 'r') as fichero_entorno:
+        entornos = json.load(fichero_entorno)
 
-    return secrets
+    return entornos
   
 def main():
+  # variables generales
   hoy_cadena = datetime.today().strftime("%Y-%m-%d")
   script_nombre = os.path.basename(sys.argv[0])
-  #script_nombre="Leer Toggl.py"
   
   # recoger los argumentos
   parser = argparse.ArgumentParser(
@@ -58,12 +58,11 @@ def main():
       # extraer argumentos
       args = parser.parse_args()
       
-      # extraer los secretos
-      secrets = get_secrets()
-      #api_key_toggl = secrets.get(args.entorno,"API_KEY_TOGGL")
-      #api_key_redmine = secrets.get(args.entorno,"API_KEY_REDMINE")
-      api_key_toggl = secrets[args.entorno]["API_KEY_TOGGL"]
-      api_key_redmine = secrets[args.entorno]["API_KEY_REDMINE"]
+      # extraer los entornos
+      entornos = get_entornos()
+      
+      api_key_toggl = entornos[args.entorno]["API_KEY_TOGGL"]
+      api_key_redmine = entornos[args.entorno]["API_KEY_REDMINE"]
       
   except: #argparse.ArgumentError or SystemExit:
       parser.print_help()
@@ -71,7 +70,7 @@ def main():
   # Argumentos
   print(f'Argumentos de \"{script_nombre}\": {args.inicio.strftime("%Y-%m-%d")}, {args.fin.strftime("%Y-%m-%d")}, {args.usuario}, {args.entorno}')
   
-  # Example usage of the loaded secrets
+  # Example usage of the loaded entornos
   print(f"API_KEY_TOGGL: {api_key_toggl}")
   print(f"API_KEY_REDMINE: {api_key_redmine}")
 
