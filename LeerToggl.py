@@ -1,17 +1,11 @@
 #import requests
-import json
-from base64 import b64encode
+#import json
 import os
 import sys
 import argparse
+from base64 import b64encode
 from datetime import datetime
-
-# obtener secretos
-def get_entornos():
-    with open('entorno.json', 'r') as fichero_entorno:
-        entornos = json.load(fichero_entorno)
-
-    return entornos
+from dotenv import dotenv_values
 
 def main():
     # variables generales
@@ -57,17 +51,23 @@ def main():
         # extraer argumentos
         args = parser.parse_args()
         
-        # extraer los entornos
-        entornos = get_entornos()
+        inicio = {args.inicio.strftime("%Y-%m-%d")}
+        fin = {args.fin.strftime("%Y-%m-%d")}
         
-        api_key_toggl = entornos[args.entorno]["API_KEY_TOGGL"]
-        api_key_redmine = entornos[args.entorno]["API_KEY_REDMINE"]
+        log_name = os.path.dirname(sys.argv[0]) + "log/" + inicio + "_" + fin + ".csv"
         
+        entorno = dotenv_values(f".env.{args.entorno}")        
+        api_key_toggl = entorno.get("API_KEY_TOGGL")
+        api_key_redmine = entorno.get("API_KEY_REDMINE")
+        
+        
+        
+
     except: #argparse.ArgumentError or SystemExit:
         parser.print_help()
         exit(1)
     # Argumentos
-    print(f'Argumentos de \"{script_nombre}\": {args.inicio.strftime("%Y-%m-%d")}, {args.fin.strftime("%Y-%m-%d")}, {args.usuario}, {args.entorno}')
+    print(f'Argumentos de \"{script_nombre}\": {inicio}, {fin}, {args.usuario}, {args.entorno}')
     
     # Example usage of the loaded entornos
     print(f"API_KEY_TOGGL: {api_key_toggl}")
