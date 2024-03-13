@@ -162,6 +162,7 @@ cython_debug/
 # y mis ficheros de salida de pruebas
 tmp/
 log/
+util/*
 secrets*.json
 entornos.json
 .env*
