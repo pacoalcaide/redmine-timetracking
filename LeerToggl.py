@@ -1,5 +1,5 @@
-#import requests
-#import json
+import requests
+import json
 import os
 import sys
 import argparse
@@ -35,10 +35,10 @@ def main():
                         nargs='?',
                         const=hoy_cadena, 
                         type=lambda s: datetime.strptime(s, "%Y-%m-%d"))
-    parser.add_argument('-u',
-                        '--usuario',
-                        help="Usuario redmine para asignar los tiempos cargados", 
-                        required=True),
+    #parser.add_argument('-u',
+    #                    '--usuario',
+    #                    help="Usuario redmine para asignar los tiempos cargados", 
+    #                    required=True)
     parser.add_argument('-e',
                         '--entorno',
                         help="Entorno de Desarrollo (DES) o Producción (PRO) (por defecto Desarrollo \"%(const)s\")", 
@@ -50,28 +50,40 @@ def main():
     try:
         # extraer argumentos
         args = parser.parse_args()
-        
-        inicio = {args.inicio.strftime("%Y-%m-%d")}
-        fin = {args.fin.strftime("%Y-%m-%d")}
-        
-        log_name = os.path.dirname(sys.argv[0]) + "log/" + inicio + "_" + fin + ".csv"
-        
-        entorno = dotenv_values(f".env.{args.entorno}")        
-        api_key_toggl = entorno.get("API_KEY_TOGGL")
-        api_key_redmine = entorno.get("API_KEY_REDMINE")
-        
-        
-        
 
-    except: #argparse.ArgumentError or SystemExit:
+    except: #argparse.ArgumentError: #or SystemExit: # type: ignore
         parser.print_help()
         exit(1)
+
+    entorno = dotenv_values(f".env.{args.entorno}")        
+    api_key_toggl = entorno.get("API_KEY_TOGGL")
+    api_key_toggl_b = f"{api_key_toggl}:api_token".encode() #en bytes
+    #api_key_redmine = entorno.get("API_KEY_REDMINE")
+    url_toggl = entorno.get("URL_TOGGL")
+
+    inicio = args.inicio.strftime("%Y-%m-%d")
+    fin = args.fin.strftime("%Y-%m-%d")
+    url_toggl_param = f"{url_toggl}?start_date={inicio}&end_date={fin}"
+    #log_name = os.path.dirname(sys.argv[0]) + f"/log/{inicio}_{fin}.csv"
+    log_name = f"./log/{inicio}_{fin}.json"
+
+    data = requests.get(url_toggl_param, 
+                        headers={'content-type' : 'application/json', 
+                        'Authorization' : 'Basic %s' %  b64encode(api_key_toggl_b).decode("ascii")})
+
+# incluir la info en un fichero de salida
+    with open(log_name, "w") as f:
+        # Convert data to JSON string with indentation for readability
+        formatted_json = json.dumps(data.json(), indent=4)
+        # Write the JSON string to the file
+        f.write(formatted_json)
+
     # Argumentos
-    print(f'Argumentos de \"{script_nombre}\": {inicio}, {fin}, {args.usuario}, {args.entorno}')
+    print(f'Argumentos de \"{script_nombre}\": {inicio}, {fin}, {args.entorno}')
     
     # Example usage of the loaded entornos
     print(f"API_KEY_TOGGL: {api_key_toggl}")
-    print(f"API_KEY_REDMINE: {api_key_redmine}")
+    #print(f"API_KEY_REDMINE: {api_key_redmine}")
 
 """
 fecha_inicio = "2024-02-25"
