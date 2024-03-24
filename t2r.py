@@ -1,21 +1,45 @@
+import os
+import sys
+import argparse
 import requests
-import redminelib
+#import redminelib
+from redminelib import Redmine
 from datetime import datetime, timedelta
-
-# Toggl API credentials
-toggl_api_token = "YOUR_TOGGL_API_TOKEN"
-toggl_workspace_id = "YOUR_TOGGL_WORKSPACE_ID"
-
-# Redmine API credentials
-redmine_url = "YOUR_REDMINE_URL"
-redmine_api_key = "YOUR_REDMINE_API_KEY"
+from base64 import b64encode
+from dotenv import dotenv_values
 
 # Function to get time entries from Toggl
-def get_toggl_entries(since=None, until=None):
-  url = f"https://api.toggl.com/reports/weekly?workspace_id={toggl_workspace_id}"
-  headers = {"Authorization": f"Basic {toggl_api_token}"}
-  params = {"since": since.strftime("%Y-%m-%d"), "until": until.strftime("%Y-%m-%d")} if since and until else {}
-  response = requests.get(url, headers=headers, params=params)
+def get_toggl_entries(toggl_url_report=None,toggl_api_key=None,inicio=None, fin=None):
+  #toggl_url = f"https://api.toggl.com/reports/weekly?workspace_id={toggl_workspace_id}"
+  json =  {
+            "start_date": inicio.strftime("%Y-%m-%d"), 
+            "end_date": fin.strftime("%Y-%m-%d")
+          } if inicio and fin else {}
+  headers={ 'content-type' : 'application/json', 
+            'Authorization' : 'Basic %s' %  b64encode(f"{toggl_api_key}:api_token".encode()).decode("ascii")
+          }
+  
+  """
+  import requests
+  from base64 import b64encode
+
+  data = requests.post(
+  'https://api.track.toggl.com/reports/api/v3/workspace/899743/search/time_entries', 
+
+  json={
+  "end_date":"2024-03-22",
+  "start_date":"2024-03-22",
+  }, 
+
+  headers={ 'content-type' : 'application/json', 
+            'Authorization' : 'Basic %s' %  b64encode(f"0e435e25de0761bcba5c05a0a755655f:api_token".encode()).decode("ascii")
+  }
+  )
+
+  print(data.json())
+  """
+  
+  response = requests.post(toggl_url_report, json=json, headers=headers)
   response.raise_for_status()
   return response.json()
 
@@ -30,15 +54,73 @@ def create_redmine_entry(redmine, project_id, issue_id, hours, spent_on):
 
 # Main function
 def main():
-  # Connect to Redmine API
-  redmine = redminelib.Redmine(redmine_url, api_key=redmine_api_key)
-
-  # Get today's date and subtract 7 days to get last week's date
+  # variables generales
   today = datetime.today()
+  hoy_cadena = today.strftime("%Y-%m-%d")
   last_week = today - timedelta(days=7)
+  script_nombre = os.path.basename(sys.argv[0])
+  
+  # recoger los argumentos
+  parser = argparse.ArgumentParser(
+                      prog=script_nombre,
+                      description='Lee los datos de Toggl para descargarlos en un fichero CSV')
+  parser.add_argument('-v', 
+                      '--version', 
+                      help="Version", 
+                      action='version', 
+                      version='%(prog)s 0.0.1')
+  parser.add_argument('-i', 
+                      '--inicio', 
+                      help="Fecha de INICIO en formato AAAA-MM-DD (por defecto hoy \"%(const)s\")", 
+                      required=True,
+                      nargs='?',
+                      const=hoy_cadena, 
+                      type=lambda s: datetime.strptime(s, "%Y-%m-%d"))
+  parser.add_argument('-f', 
+                      '--fin', 
+                      help="Fecha de FIN en formato AAAA-MM-DD (por defecto hoy \"%(const)s\")", 
+                      required=True,
+                      nargs='?',
+                      const=hoy_cadena, 
+                      type=lambda s: datetime.strptime(s, "%Y-%m-%d"))
+  #parser.add_argument('-u',
+  #                    '--usuario',
+  #                    help="Usuario redmine para asignar los tiempos cargados", 
+  #                    required=True)
+  parser.add_argument('-e',
+                      '--entorno',
+                      help="Entorno de Desarrollo (DES) o Producción (PRO) (por defecto Desarrollo \"%(const)s\")", 
+                      required=True,
+                      nargs='?',
+                      choices=['des', 'pro'],
+                      const='des'
+                      )
+  try:
+      # extraer argumentos
+      args = parser.parse_args()
+  except: #argparse.ArgumentError: #or SystemExit: # type: ignore
+      parser.print_help()
+      exit(1)
+  
+  entorno = dotenv_values(f".env.{args.entorno}")        
+  
+  toggl_url_report = entorno.get("TOGGL_URL_REPORT")
+  toggl_api_key = entorno.get("TOGGL_API_KEY")
+  
+  redmine_url = entorno.get("REDMINE_URL")
+  redmine_api_key = entorno.get("REDMINE_API_KEY")
+  
+  #inicio = args.inicio.strftime("%Y-%m-%d")
+  #fin = args.fin.strftime("%Y-%m-%d")
+
+  # Connect to Redmine API
+  #redmine = redminelib.Redmine(redmine_url, api_key=redmine_api_key)
+  redmine = Redmine(redmine_url, api_key=redmine_api_key)
+
+  # leer de toggl y escribir en loop en redmine
 
   # Get Toggl time entries for last week
-  toggl_entries = get_toggl_entries(since=last_week, until=today)
+  toggl_entries = get_toggl_entries(toggl_url_report=toggl_url_report, toggl_api_key=toggl_api_key, inicio=args.inicio, fin=args.fin)
 
   # Loop through Toggl entries and create Redmine time entries
   for entry in toggl_entries:
@@ -59,7 +141,7 @@ def main():
         issue_id = int(match.group(1))
 
         # Create Redmine time entry
-        create_redmine_entry(redmine, project_id, issue_id, hours, start_date)
+        #create_redmine_entry(redmine, project_id, issue_id, hours, start_date)
         print(f"Created Redmine time entry for {description} ({hours} hours)")
     else:
       print(f"Project '{project}' not found in Redmine, skipping entry...")
