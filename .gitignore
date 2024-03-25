@@ -159,7 +159,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# y mis ficheros de salida de pruebas
+# y mi info de pruebas
 tmp/
 log/
 util/

@@ -92,7 +92,7 @@ def main():
                       help="Entorno de Desarrollo (DES) o Producción (PRO) (por defecto Desarrollo \"%(const)s\")", 
                       required=True,
                       nargs='?',
-                      choices=['des', 'pro'],
+                      choices=['des', 'pro','ejemplo'],
                       const='des'
                       )
   try:
