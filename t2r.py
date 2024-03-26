@@ -2,7 +2,7 @@ import os
 import sys
 import argparse
 import requests
-#import redminelib
+import re
 from redminelib import Redmine
 from datetime import datetime, timedelta
 from base64 import b64encode
@@ -42,6 +42,33 @@ def get_toggl_entries(toggl_url_report=None,toggl_api_key=None,inicio=None, fin=
   response = requests.post(toggl_url_report, json=json, headers=headers)
   response.raise_for_status()
   return response.json()
+
+# Extraer info del texto de la descripción toogle_time_entry
+# Formato: #999999 - texto - texto - ...
+#   * #999999: - es el num. de redmine y no es obligatorio
+#     * en su defecto se usará el nombre del proyecto para imputar las horas
+#     * sino hay num. redmine, ni proyecto, ese tiempo  no se puede cargar en ningún sitio de Redmine
+#   * la última frase de texto tras el último guión se usará como descripción del tiempo 
+#     * y sino hay "-", el texto completo
+def extract_info(text):
+  """
+  Extrae el número tras "#" y la última frase tras "-" de una cadena.
+
+  Args:
+    text (str): La cadena de texto a procesar.
+
+  Returns:
+    tuple: (número, frase)
+  """
+  # Buscar el número tras "#"
+  number_match = re.search(r"#(\d+)", text)
+  number = None if number_match is None else int(number_match.group(1))
+
+  # Buscar la última frase tras "-"
+  phrase_parts = text.split("-")
+  phrase = None if phrase_parts is None else phrase_parts[-1].strip()
+  
+  return number, phrase
 
 # Function to create a Redmine time entry
 def create_redmine_entry(redmine, project_id, issue_id, hours, spent_on):
@@ -120,12 +147,15 @@ def main():
   # leer de toggl y escribir en loop en redmine
 
   # Get Toggl time entries for last week
-  toggl_entries = get_toggl_entries(toggl_url_report=toggl_url_report, toggl_api_key=toggl_api_key, inicio=args.inicio, fin=args.fin)
+  toggl_entries = get_toggl_entries(toggl_url_report=toggl_url_report, 
+                                    toggl_api_key=toggl_api_key, 
+                                    inicio=args.inicio, 
+                                    fin=args.fin)
 
   # Loop through Toggl entries and create Redmine time entries
   for entry in toggl_entries:
     # Extract relevant data from Toggl entry
-    description = entry["description"]
+    num_redmine, description = extract_info(entry["description"])
     project = entry["project"]
     start_date = datetime.fromisoformat(entry["start_date"])
     hours = entry["duration"] / (60 * 60)  # Convert duration to hours
