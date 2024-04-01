@@ -48,7 +48,11 @@ def get_toggl_entries(toggl_url_report=None, toggl_api_key=None, inicio=None, fi
             
             # añadimos colunmnas calculadas para que la futura iteración por cada fila, sea más eficiente 
             # Extraer datos de la descripción
-            df["num_redmine"], df["comentario"] = extract_info(df["Description"])
+            df["num_redmine"] = df["Description"].apply(extract_numero)
+            df["comentario"] = df["Description"].apply(extract_comentario)
+            
+            #, comentario = extract_info(df["Description"])
+            #df = df.assign(num_redmine=num_redmine, comentario=comentario)  # Assign calculated values
             
             # devolver el panda dataframe 
             return df
@@ -71,49 +75,69 @@ def get_toggl_entries(toggl_url_report=None, toggl_api_key=None, inicio=None, fi
             f"Error retrieving report: {response.status_code} - {response.text}"
         )
 
-    # return response.json()
-    # df = pd.read_csv(StringIO(response.content.decode('utf-8')))
-    # df = pd.read_csv(response.content)
-    # return df.to_json(orient="records")
-
-
 # Extraer info del texto de la descripción toogle_time_entry
 # Formato: #999999 - texto - texto - ...
 #   * #999999: - es el num. de redmine y no es obligatorio
 #     * en su defecto se usará el nombre del proyecto para imputar las horas
 #     * sino hay num. redmine, ni proyecto, ese tiempo  no se puede cargar en ningún sitio de Redmine
-#   * la última frase de texto tras el último guión se usará como descripción del tiempo
-#     * y sino hay "-", el texto completo
-def extract_info(text):
+def extract_numero(text):
     """
-    Extrae el número tras "#" y la última frase tras "-" de una cadena.
+    Extrae el número tras "#" de una cadena.
 
     Args:
         text (str): La cadena de texto a procesar.
 
     Returns:
-        tuple: (número, frase)
+        tuple: (número)
     """
     # Buscar el número tras "#"
-    number_match = re.search(r"#(\d+)", text)
-    number = None if number_match is None else int(number_match.group(1))
+    numero_match = re.search(r"#(\d+)", text)
+    numero = None if numero_match is None else int(numero_match.group(1))
 
+    return numero
+
+# Extraer info del texto de la descripción toogle_time_entry
+# Formato: #999999 - texto - texto - ...
+#   * la última frase de texto tras el último guión se usará como descripción del tiempo
+#     * y sino hay "-", el texto completo
+def extract_comentario(text):
+    """
+    Extrae la última frase tras "-" de una cadena.
+
+    Args:
+        text (str): La cadena de texto a procesar.
+
+    Returns:
+        tuple: (comentario)
+    """
     # Buscar la última frase tras "-"
-    phrase_parts = text.split("-")
-    phrase = None if phrase_parts is None else phrase_parts[-1].strip()
-    # [ ] Devolver None cuando no viene el guion 
+    # [x] Devolver None en el comentario del timeentry cuando no viene el guion 
     #   * porque en principio para Redmine no es obligatorio asociado al timeentry a no ser que se configure expresamente
+    comentario_parts = text.split("-")
+    comentario = None if (comentario_parts is None or len(comentario_parts) == 1) else comentario_parts[-1].strip()
 
-    return number, phrase
-
+    return comentario
 
 # Function to create a Redmine time entry
-def create_redmine_entry(redmine, project_id, issue_id, hours, spent_on):
+def create_redmine_entry(redmine, project_id, issue_id, spent_on, hours, comentario, actividad):
+    # Los campos necesarios son ...
+    #
+    # Num Redmine: o Proyecto: (*)
+    # Usuario (*): ?????
+    # Fecha (*): 
+    # Horas (*): 
+    # Comentario:
+    # Actividad (*): 
+
     time_entry = redmine.time_entry.new()
+    
     time_entry.project_id = project_id
     time_entry.issue_id = issue_id
-    time_entry.hours = hours
     time_entry.spent_on = spent_on.strftime("%Y-%m-%d")
+    time_entry.hours = hours
+    time_entry.comment = comentario
+    time_entry.activity = actividad
+    
     time_entry.save()
 
 
@@ -122,7 +146,7 @@ def main():
     # variables generales
     today = datetime.today()
     hoy_cadena = today.strftime("%Y-%m-%d")
-    last_week = today - timedelta(days=7)
+    # last_week = today - timedelta(days=7)
     script_nombre = os.path.basename(sys.argv[0])
 
     # recoger los argumentos
@@ -174,6 +198,7 @@ def main():
 
     # Cargar las variables de entorno
     entorno = dotenv_values(f".env.{args.entorno}")
+    # [ ] dejar bien organizado el fichero de .env.ejemplo
 
     # Copiar las variables de entorno
     toggl_url_report = entorno.get("TOGGL_URL_REPORT")
@@ -217,20 +242,20 @@ def main():
         # [x] conseguir que row coja todas las columnas de toggl_entries
 
         # Procesamiento específico para cada registro)
-        if num_redmine == None and row.Project == None:
+        if row.num_redmine == None and row.Project == None:
             print(f"sin redmine ni proyecto:{row}")
-            print(f"redmine: {num_redmine}")
-            print(f"texto: {texto}")
+            print(f"redmine: {row.num_redmine}")
+            print(f"texto: {row.comentario}")
             print(f"proyecto: {row.Project}")
-        elif num_redmine == None and row.Project != None:
+        elif row.num_redmine == None and row.Project != None:
             print(f"sin redmine pero con proyecto:{row}")
-            print(f"redmine: {num_redmine}")
-            print(f"texto: {texto}")
+            print(f"redmine: {row.num_redmine}")
+            print(f"texto: {row.comentario}")
             print(f"proyecto: {row.Project}")
-        elif num_redmine != None:
+        elif row.num_redmine != None:
             print(f"con redmine:{row}")
-            print(f"redmine: {num_redmine}")
-            print(f"texto: {texto}")
+            print(f"redmine: {row.num_redmine}")
+            print(f"texto: {row.comentario}")
             print(f"proyecto: {row.Project}")
         else:
             print("Else final")
