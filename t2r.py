@@ -13,8 +13,8 @@ from datetime import datetime, timedelta
 from base64 import b64encode
 from dotenv import dotenv_values
 
-# TODO - aclarar los import que sobran
-# TODO - arreglo de los comentarios que sobran
+# [ ] aclarar los import que sobran
+# [ ] arreglo de los comentarios que sobran
 
 # Function to get time entries from Toggl
 def get_toggl_entries(toggl_url_report=None, toggl_api_key=None, inicio=None, fin=None):
@@ -41,8 +41,18 @@ def get_toggl_entries(toggl_url_report=None, toggl_api_key=None, inicio=None, fi
         if response.headers["Content-Type"] == "text/csv":
             # Parse CSV if content type confirms
             csv_data_io = BytesIO(response.content)
-            # df = pd.read_csv(csv_data_io)
-            return pd.read_csv(csv_data_io)
+            # renombramos los nombres de columnas  quitando los espacios en blanco delante 
+            # y detrás en dichos nombres, y además sustituyendo los espacios en blanco intermedios por "_"
+            # dado que python no acepta dichos espacios como válidos en los nombres de columnas
+            df = pd.read_csv(csv_data_io).rename(columns=lambda x: x.strip().replace(' ', '_'))
+            
+            # añadimos colunmnas calculadas para que la futura iteración por cada fila, sea más eficiente 
+            # Extraer datos de la descripción
+            df["num_redmine"], df["comentario"] = extract_info(df["Description"])
+            
+            # devolver el panda dataframe 
+            return df
+
             # with tempfile.NamedTemporaryFile(delete=True) as temp_file:
             #  temp_file.write(response.content)
             #  # Read the CSV data from the temporary file
@@ -79,10 +89,10 @@ def extract_info(text):
     Extrae el número tras "#" y la última frase tras "-" de una cadena.
 
     Args:
-      text (str): La cadena de texto a procesar.
+        text (str): La cadena de texto a procesar.
 
     Returns:
-      tuple: (número, frase)
+        tuple: (número, frase)
     """
     # Buscar el número tras "#"
     number_match = re.search(r"#(\d+)", text)
@@ -91,6 +101,8 @@ def extract_info(text):
     # Buscar la última frase tras "-"
     phrase_parts = text.split("-")
     phrase = None if phrase_parts is None else phrase_parts[-1].strip()
+    # [ ] Devolver None cuando no viene el guion 
+    #   * porque en principio para Redmine no es obligatorio asociado al timeentry a no ser que se configure expresamente
 
     return number, phrase
 
@@ -139,10 +151,6 @@ def main():
         const=hoy_cadena,
         type=lambda s: datetime.strptime(s, "%Y-%m-%d"),
     )
-    # parser.add_argument('-u',
-    #                    '--usuario',
-    #                    help="Usuario redmine para asignar los tiempos cargados",
-    #                    required=True)
     parser.add_argument(
         "-e",
         "--entorno",
@@ -155,26 +163,35 @@ def main():
     try:
         # extraer argumentos
         args = parser.parse_args()
+        
+        # [ ] controlar que FIN >= INICIO
+        # [ ] controlar que FIN - INICIO no es mucho tiempo (ej. ¿varios meses o años?)
+        
+        
     except:  # argparse.ArgumentError: #or SystemExit: # type: ignore
         parser.print_help()
         exit(1)
 
+    # Cargar las variables de entorno
     entorno = dotenv_values(f".env.{args.entorno}")
 
+    # Copiar las variables de entorno
     toggl_url_report = entorno.get("TOGGL_URL_REPORT")
     toggl_api_key = entorno.get("TOGGL_API_KEY")
-
     redmine_url = entorno.get("REDMINE_URL")
     redmine_api_key = entorno.get("REDMINE_API_KEY")
+    # [ ] ¿será necesario añadir el usuario a pesar de tener la API KEY de Redmine?
+    #   * porque meter un timeentry en Redmine de Eprinsa el usuario es un campo obligatorio
 
     # inicio = args.inicio.strftime("%Y-%m-%d")
     # fin = args.fin.strftime("%Y-%m-%d")
 
-    # Connect to Redmine API
-    # redmine = redminelib.Redmine(redmine_url, api_key=redmine_api_key)
-    redmine = Redmine(redmine_url, api_key=redmine_api_key)
-
     try:
+        # Connect to Redmine API
+        # redmine = redminelib.Redmine(redmine_url, api_key=redmine_api_key)
+        redmine = Redmine(redmine_url, api_key=redmine_api_key)
+
+        # Conectar con Toggl API
         # Get Toggl time entries en Pandas dataframe
         toggl_entries = get_toggl_entries(
             toggl_url_report=toggl_url_report,
@@ -187,15 +204,17 @@ def main():
         print(f"Error: {e}")
         exit(1)
 
-    # Recorrer todo el dataframe
+    # Recorrer todo el dataframe de toggl
     for row in toggl_entries.itertuples():
         # Extraer datos de la descripción
-        num_redmine, texto = extract_info(row.Description)
-
-        # TODO que hacer cuando num redmine y proyecto vienen vacios
-        # TODO que hacer cuando num redmine viene vacio y proyecto relleno
-        # TODO que hacer cuando num redmine viene relleno
-        # TODO que hacer cuando ...
+        # num_redmine, texto = extract_info(row.Description)
+        
+        # [ ] que hacer cuando num redmine y proyecto vienen vacios
+        #   * devolver por stdout que esa fila no se ha procesato
+        #   * ¿quizás más adelante una etiqueta #nrd (no cargado en Redmine) para preparar 2das pasadas de carga de datos de toggl?
+        # [ ] que hacer cuando num redmine viene vacio y proyecto relleno
+        # [ ] que hacer cuando num redmine viene relleno
+        # [x] conseguir que row coja todas las columnas de toggl_entries
 
         # Procesamiento específico para cada registro)
         if num_redmine == None and row.Project == None:
