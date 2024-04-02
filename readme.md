@@ -1,5 +1,8 @@
 # Readme.md
 
+* renombrar .env.ejemplo a .env.des y .env.pro
+    * el primero para desarrollar y el segundo para trabajar en producción
+
 # Lista de tareas pendientes
 
 -  la consulta de report entre fechas tiene los datos más a la vista para poder importar en Redmine

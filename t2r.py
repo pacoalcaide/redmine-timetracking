@@ -110,10 +110,11 @@ def extract_comentario(text):
     Returns:
         tuple: (comentario)
     """
-    # Buscar la última frase tras "-"
+    # Buscar la última frase tras " - "
+    #   * el separador es "espacio - espacio" para no separar cuando sea el guión de una palabra
     # [x] Devolver None en el comentario del timeentry cuando no viene el guion 
     #   * porque en principio para Redmine no es obligatorio asociado al timeentry a no ser que se configure expresamente
-    comentario_parts = text.split("-")
+    comentario_parts = text.split(" - ")
     comentario = None if (comentario_parts is None or len(comentario_parts) == 1) else comentario_parts[-1].strip()
 
     return comentario
@@ -121,13 +122,12 @@ def extract_comentario(text):
 # Function to create a Redmine time entry
 def create_redmine_entry(redmine, project_id, issue_id, spent_on, hours, comentario, actividad):
     # Los campos necesarios son ...
-    #
-    # Num Redmine: o Proyecto: (*)
-    # Usuario (*): ?????
-    # Fecha (*): 
-    # Horas (*): 
-    # Comentario:
-    # Actividad (*): 
+    #   Num Redmine: o Proyecto: (*)
+    #   Usuario (*): ?????
+    #   Fecha (*): 
+    #   Horas (*): 
+    #   Comentario:
+    #   Actividad (*): 
 
     time_entry = redmine.time_entry.new()
     
@@ -198,7 +198,6 @@ def main():
 
     # Cargar las variables de entorno
     entorno = dotenv_values(f".env.{args.entorno}")
-    # [ ] dejar bien organizado el fichero de .env.ejemplo
 
     # Copiar las variables de entorno
     toggl_url_report = entorno.get("TOGGL_URL_REPORT")
