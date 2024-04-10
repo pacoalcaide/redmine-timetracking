@@ -51,9 +51,6 @@ def get_toggl_entries(toggl_url_report=None, toggl_api_key=None, inicio=None, fi
             df["num_redmine"] = df["Description"].apply(extract_numero)
             df["comentario"] = df["Description"].apply(extract_comentario)
             
-            #, comentario = extract_info(df["Description"])
-            #df = df.assign(num_redmine=num_redmine, comentario=comentario)  # Assign calculated values
-            
             # devolver el panda dataframe 
             return df
 
@@ -259,7 +256,7 @@ def main():
         else:
             print("Else final")
 
-    """ 
+    """
     if num_redmine and row.Project:
         # Create Redmine time entry
         # create_redmine_entry(redmine, project_id, issue_id, hours, start_date)

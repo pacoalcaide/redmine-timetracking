@@ -161,9 +161,6 @@ cython_debug/
 
 # y mi info de pruebas
 tmp/
-log/
-util/
-secrets*.json
-entornos.json
 .env.*
 !.env.ejemplo
+*.des.*
