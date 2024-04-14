@@ -1,3 +1,17 @@
+"""
+Toggl to Redmine
+
+Este script carga en Redmine las entradas de tiempo que se existan en el servicio Toggl
+
+Es necesario preparar el fichero .env.pro con los parámetros correspondientes a tus servicios de Toggle y Redmine.
+    * utiliza a modo de ejemplo el fichero .env.ejemplo
+
+This file can also be imported as a module and contains the following
+functions:
+
+    * get_spreadsheet_cols - returns the column headers of the file
+    * main - the main function of the script
+"""
 import os
 import sys
 import argparse
@@ -149,7 +163,7 @@ def main():
     # recoger los argumentos
     parser = argparse.ArgumentParser(
         prog=script_nombre,
-        description="Lee los datos de Toggl para descargarlos en un fichero CSV",
+        description=__doc__, # Carga el docstring del script
     )
     parser.add_argument(
         "-v", "--version", help="Version", action="version", version="%(prog)s 0.0.1"
