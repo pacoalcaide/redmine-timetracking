@@ -6,11 +6,13 @@ Este script carga en Redmine las entradas de tiempo que se existan en el servici
 Es necesario preparar el fichero .env.pro con los parámetros correspondientes a tus servicios de Toggle y Redmine.
     * utiliza a modo de ejemplo el fichero .env.ejemplo
 
-This file can also be imported as a module and contains the following
-functions:
+La lista de funciones es:
 
-    * get_spreadsheet_cols - returns the column headers of the file
-    * main - the main function of the script
+    * get_toggl_entries - recoge las entradas de toggl entre fechas
+    * extract_numero - extrae el num redmine de una entrada toggl
+    * extract_comentario - extrae el comentario para la entrada de tiempo en redmine
+    * create_redmine_entry - crea la entrada de tiempo
+    * main - funcion main
 """
 import os
 import sys
@@ -30,8 +32,56 @@ from dotenv import dotenv_values
 # [ ] aclarar los import que sobran
 # [ ] arreglo de los comentarios que sobran
 
+# Extraer info del texto de la descripción toogle_time_entry
+# Formato: #999999 - texto - texto - ...
+#   * #999999: - es el num. de redmine y no es obligatorio
+#     * en su defecto se usará el nombre del proyecto para imputar las horas
+#     * sino hay num. redmine, ni proyecto, ese tiempo  no se puede cargar en ningún sitio de Redmine
+def extract_numero(text: str = None) -> int:
+    """
+    Extrae el número tras "#" de una cadena.
+
+    Args:
+        text (str): La cadena de texto a procesar.
+
+    Returns:
+        numero: (int)
+    """
+    # Buscar el número tras "#"
+    numero_match = re.search(r"#(\d+)", text)
+    numero = None if numero_match is None else int(numero_match.group(1))
+
+    return numero
+
+# Extraer info del texto de la descripción toogle_time_entry
+# Formato: #999999 - texto - texto - ...
+#   * la última frase de texto tras el último guión se usará como descripción del tiempo
+#     * y sino hay "-", el texto completo
+def extract_comentario(text: str = None) -> str:
+    """
+    Extrae la última frase tras "-" de una cadena.
+
+    Args:
+        text (str): La cadena de texto a procesar.
+
+    Returns:
+        comentario (str): El comentario para la entrada de texto extraido
+    """
+    # Buscar la última frase tras " - "
+    #   * el separador es "espacio - espacio" para no separar cuando sea el guión de una palabra
+    # [x] Devolver None en el comentario del timeentry cuando no viene el guion 
+    #   * porque en principio para Redmine no es obligatorio asociado al timeentry a no ser que se configure expresamente
+    comentario_parts = text.split(" - ")
+    comentario = None if (comentario_parts is None or len(comentario_parts) == 1) else comentario_parts[-1].strip()
+
+    return comentario
+
 # Function to get time entries from Toggl
-def get_toggl_entries(toggl_url_report=None, toggl_api_key=None, inicio=None, fin=None):
+def get_toggl_entries(toggl_url_report: str = None, toggl_api_key: str = None, inicio: datetime = None, fin:datetime = None):
+    """
+    [ ] get_toggl_entries: Documentar la función 
+    [ ] get_toggl_entries: Ponerle el tipo de dato de salida (es dataframe)
+    """
     json = (
         {
             "start_date": inicio.strftime("%Y-%m-%d"),
@@ -86,59 +136,35 @@ def get_toggl_entries(toggl_url_report=None, toggl_api_key=None, inicio=None, fi
             f"Error retrieving report: {response.status_code} - {response.text}"
         )
 
-# Extraer info del texto de la descripción toogle_time_entry
-# Formato: #999999 - texto - texto - ...
-#   * #999999: - es el num. de redmine y no es obligatorio
-#     * en su defecto se usará el nombre del proyecto para imputar las horas
-#     * sino hay num. redmine, ni proyecto, ese tiempo  no se puede cargar en ningún sitio de Redmine
-def extract_numero(text):
-    """
-    Extrae el número tras "#" de una cadena.
-
-    Args:
-        text (str): La cadena de texto a procesar.
-
-    Returns:
-        tuple: (número)
-    """
-    # Buscar el número tras "#"
-    numero_match = re.search(r"#(\d+)", text)
-    numero = None if numero_match is None else int(numero_match.group(1))
-
-    return numero
-
-# Extraer info del texto de la descripción toogle_time_entry
-# Formato: #999999 - texto - texto - ...
-#   * la última frase de texto tras el último guión se usará como descripción del tiempo
-#     * y sino hay "-", el texto completo
-def extract_comentario(text):
-    """
-    Extrae la última frase tras "-" de una cadena.
-
-    Args:
-        text (str): La cadena de texto a procesar.
-
-    Returns:
-        tuple: (comentario)
-    """
-    # Buscar la última frase tras " - "
-    #   * el separador es "espacio - espacio" para no separar cuando sea el guión de una palabra
-    # [x] Devolver None en el comentario del timeentry cuando no viene el guion 
-    #   * porque en principio para Redmine no es obligatorio asociado al timeentry a no ser que se configure expresamente
-    comentario_parts = text.split(" - ")
-    comentario = None if (comentario_parts is None or len(comentario_parts) == 1) else comentario_parts[-1].strip()
-
-    return comentario
-
 # Function to create a Redmine time entry
 def create_redmine_entry(redmine, project_id, issue_id, spent_on, hours, comentario, actividad):
-    # Los campos necesarios son ...
-    #   Num Redmine: o Proyecto: (*)
-    #   Usuario (*): ?????
-    #   Fecha (*): 
-    #   Horas (*): 
-    #   Comentario:
-    #   Actividad (*): 
+    """ 
+    [ ] create_redmine_entry: definir datos de entrada y ¿de salida?
+    [ ] create_redmine_entry: terminar la documentación de la funcion 
+    
+    Crea la entrada de tiempo en Redmine
+
+    Args:
+        ????? text (str): La cadena de texto a procesar.
+        redmine, 
+        project_id, 
+        issue_id, 
+        spent_on, 
+        hours, 
+        comentario, 
+        actividad
+
+    Returns:
+        ?????  str: (comentario)
+    
+    Los campos necesarios son ...
+        Num Redmine: o Proyecto: (*)
+        Usuario (*): ?????
+        Fecha (*): 
+        Horas (*): 
+        Comentario:
+        Actividad (*):  
+    """
 
     time_entry = redmine.time_entry.new()
     
@@ -224,15 +250,15 @@ def main():
     try:
         # Connect to Redmine API
         # redmine = redminelib.Redmine(redmine_url, api_key=redmine_api_key)
-        redmine = Redmine(redmine_url, api_key=redmine_api_key)
+        redmine = Redmine(redmine_url = redmine_url, api_key = redmine_api_key)
 
         # Conectar con Toggl API
         # Get Toggl time entries en Pandas dataframe
         toggl_entries = get_toggl_entries(
-            toggl_url_report=toggl_url_report,
-            toggl_api_key=toggl_api_key,
-            inicio=args.inicio,
-            fin=args.fin,
+            toggl_url_report = toggl_url_report,
+            toggl_api_key = toggl_api_key,
+            inicio = args.inicio,
+            fin = args.fin
         )
 
     except (ValueError, requests.exceptions.RequestException) as e:
