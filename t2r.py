@@ -80,7 +80,7 @@ def extract_comentario(text: str = None) -> str:
     return comentario
 
 # Function to get time entries from Toggl
-def get_toggl_entries(toggl_url_report: str = None, toggl_api_key: str = None, inicio: datetime = None, fin:datetime = None):
+def get_toggl_entries(toggl_url_report: str = None, toggl_api_key: str = None, inicio: datetime = None, fin: datetime = None):
     """
     [ ] get_toggl_entries: Documentar la función 
     [ ] get_toggl_entries: Ponerle el tipo de dato de salida (es dataframe)
@@ -193,7 +193,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog = script_nombre,
         description = __doc__, # Carga el docstring del script
-        formatter_class = RawTextHelpFormatter
+        formatter_class = RawTextHelpFormatter # Formato que respeta los \n, etc.
     )
     parser.add_argument(
         "-v", "--version", help="Version", action="version", version="%(prog)s 0.0.1"
