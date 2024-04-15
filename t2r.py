@@ -14,6 +14,7 @@ La lista de funciones es:
     * create_redmine_entry - crea la entrada de tiempo
     * main - funcion main
 """
+
 import os
 import sys
 import argparse
@@ -23,6 +24,8 @@ import re
 import json
 import tempfile
 import pandas as pd
+
+from argparse import RawTextHelpFormatter
 from io import StringIO, BytesIO
 from redminelib import Redmine
 from datetime import datetime, timedelta
@@ -188,8 +191,9 @@ def main():
 
     # recoger los argumentos
     parser = argparse.ArgumentParser(
-        prog=script_nombre,
-        description=__doc__, # Carga el docstring del script
+        prog = script_nombre,
+        description = __doc__, # Carga el docstring del script
+        formatter_class = RawTextHelpFormatter
     )
     parser.add_argument(
         "-v", "--version", help="Version", action="version", version="%(prog)s 0.0.1"
@@ -218,7 +222,7 @@ def main():
         help='Entorno de Desarrollo (DES) o Producción (PRO) (por defecto Desarrollo "%(const)s")',
         required=True,
         nargs="?",
-        choices=["des", "pro", "ejemplo"],
+        choices=["des", "pro"],
         const="des",
     )
     try:
@@ -227,7 +231,6 @@ def main():
         
         # [ ] controlar que FIN >= INICIO
         # [ ] controlar que FIN - INICIO no es mucho tiempo (ej. ¿varios meses o años?)
-        
         
     except:  # argparse.ArgumentError: #or SystemExit: # type: ignore
         parser.print_help()
@@ -250,7 +253,7 @@ def main():
     try:
         # Connect to Redmine API
         # redmine = redminelib.Redmine(redmine_url, api_key=redmine_api_key)
-        redmine = Redmine(redmine_url = redmine_url, api_key = redmine_api_key)
+        redmine = Redmine(url = redmine_url, api_key = redmine_api_key)
 
         # Conectar con Toggl API
         # Get Toggl time entries en Pandas dataframe
