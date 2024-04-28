@@ -253,22 +253,24 @@ def main():
     try:
         # Connect to Redmine API
         # redmine = redminelib.Redmine(redmine_url, api_key=redmine_api_key)
-        redmine = Redmine(url = redmine_url, api_key = redmine_api_key)
+        #redmine = Redmine(url = redmine_url, api_key = redmine_api_key)
+        redmine = Redmine(url = redmine_url, key = redmine_api_key)
 
-        # Conectar con Toggl API
+
+        """ # Conectar con Toggl API
         # Get Toggl time entries en Pandas dataframe
         toggl_entries = get_toggl_entries(
             toggl_url_report = toggl_url_report,
             toggl_api_key = toggl_api_key,
             inicio = args.inicio,
             fin = args.fin
-        )
+        ) """
 
     except (ValueError, requests.exceptions.RequestException) as e:
         print(f"Error: {e}")
         exit(1)
 
-    # Recorrer todo el dataframe de toggl
+    """ # Recorrer todo el dataframe de toggl
     for row in toggl_entries.itertuples():
         # Extraer datos de la descripción
         # num_redmine, texto = extract_info(row.Description)
@@ -297,7 +299,11 @@ def main():
             print(f"texto: {row.comentario}")
             print(f"proyecto: {row.Project}")
         else:
-            print("Else final")
+            print("Else final") """
+
+    # Consultar los ID de todos los proyectos y todas las actividades a los que tengo acceso
+    # [ ] Probar a obtener los proyectos y actividades con usuarios que no sean "administradores" de Redmine
+    
 
     """
     if num_redmine and row.Project:
