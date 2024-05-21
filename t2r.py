@@ -40,7 +40,7 @@ from dotenv import dotenv_values
 #   * #999999: - es el num. de redmine y no es obligatorio
 #     * en su defecto se usará el nombre del proyecto para imputar las horas
 #     * sino hay num. redmine, ni proyecto, ese tiempo  no se puede cargar en ningún sitio de Redmine
-def extract_numero(text: str = None) -> int:
+def extract_numero(text: str | None = None) -> int | None:
     """
     Extrae el número tras "#" de una cadena.
 
@@ -60,7 +60,7 @@ def extract_numero(text: str = None) -> int:
 # Formato: #999999 - texto - texto - ...
 #   * la última frase de texto tras el último guión se usará como descripción del tiempo
 #     * y sino hay "-", el texto completo
-def extract_comentario(text: str = None) -> str:
+def extract_comentario(text: str = "") -> str | None:
     """
     Extrae la última frase tras "-" de una cadena.
 
@@ -80,19 +80,22 @@ def extract_comentario(text: str = None) -> str:
     return comentario
 
 # Function to get time entries from Toggl
-def get_toggl_entries(toggl_url_report: str = None, toggl_api_key: str = None, inicio: datetime = None, fin: datetime = None):
-    """
-    [ ] get_toggl_entries: Documentar la función 
-    [ ] get_toggl_entries: Ponerle el tipo de dato de salida (es dataframe)
-    """
+def get_toggl_entries(  toggl_url_report: str | None = None, 
+                        toggl_api_key: str | None = None, 
+                        inicio: datetime | None = None, 
+                        fin: datetime | None = None
+                    ) -> pd.DataFrame:
+    
+    # [ ] get_toggl_entries: Documentar la función 
+    # [X] get_toggl_entries: Ponerle el tipo de dato de salida (es dataframe)
+    
     json = (
         {
             "start_date": inicio.strftime("%Y-%m-%d"),
             "end_date": fin.strftime("%Y-%m-%d"),
-        }
-        if inicio and fin
-        else {}
+        } if inicio and fin else {}
     )
+    
     headers = {
         "content-type": "application/json",
         "Authorization": "Basic %s"
@@ -108,11 +111,11 @@ def get_toggl_entries(toggl_url_report: str = None, toggl_api_key: str = None, i
         if response.headers["Content-Type"] == "text/csv":
             # Parse CSV if content type confirms
             csv_data_io = BytesIO(response.content)
-            # renombramos los nombres de columnas  quitando los espacios en blanco delante 
+            # renombramos los nombres de columnas quitando los espacios en blanco delante 
             # y detrás en dichos nombres, y además sustituyendo los espacios en blanco intermedios por "_"
-            # dado que python no acepta dichos espacios como válidos en los nombres de columnas
+            # dado que python no acepta dichos espacios como válidos en los nombres de columnas de un dataframe
             df = pd.read_csv(csv_data_io).rename(columns=lambda x: x.strip().replace(' ', '_'))
-            
+
             # añadimos colunmnas calculadas para que la futura iteración por cada fila, sea más eficiente 
             # Extraer datos de la descripción
             df["num_redmine"] = df["Description"].apply(extract_numero)
@@ -120,6 +123,7 @@ def get_toggl_entries(toggl_url_report: str = None, toggl_api_key: str = None, i
             
             # devolver el panda dataframe 
             return df
+            # yield df
 
             # with tempfile.NamedTemporaryFile(delete=True) as temp_file:
             #  temp_file.write(response.content)
@@ -133,6 +137,61 @@ def get_toggl_entries(toggl_url_report: str = None, toggl_api_key: str = None, i
             raise ValueError(
                 f"Unexpected response content type: {response.headers['Content-Type']}"
             )
+    else:
+        # Raise exception with more information about the error
+        raise requests.exceptions.RequestException(
+            f"Error retrieving report: {response.status_code} - {response.text}"
+        )
+
+def set_toggl_tag_entries(  toggl_url_entries: str | None = None, 
+                            toggl_api_key    : str | None = None,  
+                            time_entry_id    : int | None = None) -> pd.DataFrame:
+
+    data = requests.patch(
+        toggl_url_entries, 
+        json = { "array":[{
+            "op":{"description":"Operation (add/remove/replace)","type":"string"},
+            "path":{"description":"The path to the entity to patch (e.g. /description)","type":"string"},
+            "value":{"object":{},"description":"The new value for the entity in path."}
+            }]}, 
+        headers = { 'content-type': 'application/json', 
+                    'Authorization' : 'Basic %s' %  b64encode(b"<email>:<password>").decode("ascii")})
+    print(data.json())
+
+    json = {"billable":"boolean",
+            "created_with":"string",
+            "description":"string",
+            "duration":"integer",
+            "duronly":"boolean",
+            "pid":"integer",
+            "project_id":"integer",
+            "shared_with_user_ids":["integer"],
+            "start":"string",
+            "start_date":"string",
+            "stop":"string",
+            "tag_action":"string",
+            "tag_ids":["integer"],
+            "tags":["string"],
+            "task_id":"integer",
+            "tid":"integer",
+            "uid":"integer",
+            "user_id":"integer",
+            "wid":"integer",
+            "workspace_id":"integer"
+            } if time_entry_id else {}
+
+    headers = {
+        "content-type": "application/json",
+        "Authorization": "Basic %s"
+        % b64encode(f"{toggl_api_key}:api_token".encode()).decode("ascii"),
+    }
+
+    response = requests.post(toggl_url_entries, json=json, headers=headers)
+    response.raise_for_status()
+
+    # Check for successful status code (e.g., 200)
+    if response.status_code == 200:
+        return
     else:
         # Raise exception with more information about the error
         raise requests.exceptions.RequestException(
@@ -257,20 +316,21 @@ def main():
         redmine = Redmine(url = redmine_url, key = redmine_api_key)
 
 
-        """ # Conectar con Toggl API
+        # Conectar con Toggl API
         # Get Toggl time entries en Pandas dataframe
         toggl_entries = get_toggl_entries(
             toggl_url_report = toggl_url_report,
             toggl_api_key = toggl_api_key,
             inicio = args.inicio,
             fin = args.fin
-        ) """
+        )
 
     except (ValueError, requests.exceptions.RequestException) as e:
         print(f"Error: {e}")
         exit(1)
 
-    """ # Recorrer todo el dataframe de toggl
+    # Recorrer todo el dataframe de toggl
+    # for row in toggl_entries:
     for row in toggl_entries.itertuples():
         # Extraer datos de la descripción
         # num_redmine, texto = extract_info(row.Description)
@@ -282,24 +342,21 @@ def main():
         # [ ] que hacer cuando num redmine viene relleno
         # [x] conseguir que row coja todas las columnas de toggl_entries
 
+        print("\n")
+
+        print(f"redmine: {row.num_redmine}")
+        print(f"texto: {row.comentario}")
+        print(f"proyecto: {row.Project}")
+
         # Procesamiento específico para cada registro)
-        if row.num_redmine == None and row.Project == None:
+        if row.num_redmine is None and row.Project is None:
             print(f"sin redmine ni proyecto:{row}")
-            print(f"redmine: {row.num_redmine}")
-            print(f"texto: {row.comentario}")
-            print(f"proyecto: {row.Project}")
-        elif row.num_redmine == None and row.Project != None:
+        elif row.num_redmine is None and row.Project is not None:
             print(f"sin redmine pero con proyecto:{row}")
-            print(f"redmine: {row.num_redmine}")
-            print(f"texto: {row.comentario}")
-            print(f"proyecto: {row.Project}")
-        elif row.num_redmine != None:
+        elif row.num_redmine is not None:
             print(f"con redmine:{row}")
-            print(f"redmine: {row.num_redmine}")
-            print(f"texto: {row.comentario}")
-            print(f"proyecto: {row.Project}")
         else:
-            print("Else final") """
+            print("Else final")
 
     # Consultar los ID de todos los proyectos y todas las actividades a los que tengo acceso
     # [ ] Probar a obtener los proyectos y actividades con usuarios que no sean "administradores" de Redmine
