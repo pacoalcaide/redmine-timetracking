@@ -111,27 +111,15 @@ def get_toggl_entries(  toggl_url_report: str | None = None,
         if response.headers["Content-Type"] == "text/csv":
             # Parse CSV if content type confirms
             csv_data_io = BytesIO(response.content)
+            
             # renombramos los nombres de columnas quitando los espacios en blanco delante 
             # y detrás en dichos nombres, y además sustituyendo los espacios en blanco intermedios por "_"
             # dado que python no acepta dichos espacios como válidos en los nombres de columnas de un dataframe
             df = pd.read_csv(csv_data_io).rename(columns=lambda x: x.strip().replace(' ', '_'))
-
-            # añadimos colunmnas calculadas para que la futura iteración por cada fila, sea más eficiente 
-            # Extraer datos de la descripción
-            df["num_redmine"] = df["Description"].apply(extract_numero)
-            df["comentario"] = df["Description"].apply(extract_comentario)
             
             # devolver el panda dataframe 
             return df
             # yield df
-
-            # with tempfile.NamedTemporaryFile(delete=True) as temp_file:
-            #  temp_file.write(response.content)
-            #  # Read the CSV data from the temporary file
-            #  df = pd.read_csv(temp_file.name)
-            # return df.to_json(orient="records")
-            # return df.to_json(orient="index")
-            # return df.to_json(orient="columns")
         else:
             # Handle unexpected content type
             raise ValueError(
@@ -329,6 +317,36 @@ def main():
         print(f"Error: {e}")
         exit(1)
 
+    # añadimos colunmnas calculadas para que la futura iteración por cada fila, sea más eficiente 
+    # Extraer datos de la descripción
+    toggl_entries["num_redmine"] = toggl_entries["Description"].apply(extract_numero)
+    toggl_entries["comentario"] = toggl_entries["Description"].apply(extract_comentario)
+
+    # Consultar los ID de todos los proyectos y todas las actividades a los que tengo acceso
+    # [ ] Probar a obtener los proyectos y actividades con usuarios que no sean "administradores" de Redmine
+    proyectos = pd.DataFrame(
+        redmine.project.all(limit=1000).values("id", "identifier", "name")
+        )
+    toggl_entries = toggl_entries.merge(proyectos[['name', 'id']], left_on='Project', right_on='name', how='left')
+    toggl_entries.rename(columns={'id': 'project_id'}, inplace=True)
+    
+    actividades = pd.DataFrame(
+        redmine.enumeration.filter(resource="time_entry_activities").values("id", "name")
+        )
+    
+
+    # print(toggl_entries[['User', 'Email', 'Client', 'Project', 'Task', 'Description', 'Billable',
+                        # 'Start_date', 'Start_time', 'End_date', 'End_time', 'Duration', 'Tags',
+                        # 'Currency', 'Amount', 'num_redmine', 'comentario']
+                        # ].head(10))
+    print(toggl_entries[
+                        ['Project', 'Description', 'Duration','project_id']
+                        ].head(10))
+    
+    # print(proyectos)
+    
+    # print(actividades)
+
     # Recorrer todo el dataframe de toggl
     # for row in toggl_entries:
     for row in toggl_entries.itertuples():
@@ -358,47 +376,7 @@ def main():
         else:
             print("Else final")
 
-    # Consultar los ID de todos los proyectos y todas las actividades a los que tengo acceso
-    # [ ] Probar a obtener los proyectos y actividades con usuarios que no sean "administradores" de Redmine
-    
-
-    """
-    if num_redmine and row.Project:
-        # Create Redmine time entry
-        # create_redmine_entry(redmine, project_id, issue_id, hours, start_date)
-        print(f"Created Redmine time entry for {texto} ({hours} hours)")
-    else:
-        print(f"Project '{project}' not found in Redmine, skipping entry...")
-    """
-
-    """  
-    # Loop through Toggl entries and create Redmine time entries
-    for entry in toggl_entries:
-        # Extract relevant data from Toggl entry
-        num_redmine, description = extract_info(entry["description"])
-        project = entry["project"]
-        start_date = datetime.fromisoformat(entry["start_date"])
-        hours = entry["duration"] / (60 * 60)  # Convert duration to hours
-    
-        # Find corresponding Redmine project ID (assuming project names match)
-        projects = redmine.project.all(name=project)
-        if projects:
-            project_id = projects[0].id
-
-            # Extract issue ID from description (assuming format "#[issue_id] description")
-            match = re.search(r"\[#(\d+)\]", description)
-            if match:
-                issue_id = int(match.group(1))
-
-                # Create Redmine time entry
-                #create_redmine_entry(redmine, project_id, issue_id, hours, start_date)
-                print(f"Created Redmine time entry for {description} ({hours} hours)")
-            else:
-                print(f"Project '{project}' not found in Redmine, skipping entry...") 
-    """
-
     print("Finished creating Redmine time entries.")
-
 
 if __name__ == "__main__":
     main()
