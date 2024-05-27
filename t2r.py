@@ -306,7 +306,6 @@ def main():
         #redmine = Redmine(url = redmine_url, api_key = redmine_api_key)
         redmine = Redmine(url = redmine_url, key = redmine_api_key)
 
-
         # Conectar con Toggl API
         # Get Toggl time entries en Pandas dataframe
         toggl_entries = get_toggl_entries_csv(
@@ -320,23 +319,31 @@ def main():
         print(f"Error: {e}")
         exit(1)
 
-    # añadimos colunmnas calculadas para que la futura iteración por cada fila, sea más eficiente 
+    # En tiempo de Desarrollo ...
+    # Reducimos el dataframe unicamente a los pocos timeentries que tienen el tag "de_prueba"
+    
+    
+    # Añadimos colunmnas calculadas para que la futura iteración por cada fila, sea más eficiente 
     # Extraer datos de la descripción
     toggl_entries["num_redmine"] = toggl_entries["Description"].apply(extract_numero)
     toggl_entries["comentario"] = toggl_entries["Description"].apply(extract_comentario)
 
     # Consultar los ID de todos los proyectos y todas las actividades a los que tengo acceso
     # [ ] Probar a obtener los proyectos y actividades con usuarios que no sean "administradores" de Redmine
-    proyectos = pd.DataFrame(
+    redmine_proyectos = pd.DataFrame(
         redmine.project.all(limit=1000).values("id", "name")
         )
-    toggl_entries.rename(columns = {'id': 'redmine_project_id', 
-                                    'name': 'redmine_project_name'}, 
-                         inplace=True)
-    toggl_entries = toggl_entries.merge(proyectos[['redmine_project_name', 'redmine_project_id']], 
-                                        left_on='Project', 
-                                        right_on='redmine_project_name', 
-                                        how='left')
+    redmine_proyectos.rename(
+        columns = { 'id': 'redmine_project_id',
+                    'name': 'redmine_project_name'}, 
+        inplace=True
+        )
+    toggl_entries = toggl_entries.merge(
+        redmine_proyectos[['redmine_project_name', 'redmine_project_id']], 
+        left_on  = 'Project', 
+        right_on = 'redmine_project_name', 
+        how      = 'left'
+        )
     
     actividades = pd.DataFrame(
         redmine.enumeration.filter(resource="time_entry_activities").values("id", "name")
