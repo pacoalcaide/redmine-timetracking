@@ -34,6 +34,10 @@ from dotenv import dotenv_values
 
 # [ ] aclarar los import que sobran
 # [ ] arreglo de los comentarios que sobran
+# [ ] hacer log del script 
+#       (con libreria "loguru" https://pravash-techie.medium.com/python-libraries-you-should-use-part-1-a68d38d23837)
+# [ ] probar la carga de los JSON o CSV directamente en duckdb 
+#       (a través de la libreria "dlt" https://pravash-techie.medium.com/python-libraries-you-should-use-part-1-a68d38d23837)
 
 # Extraer info del texto de la descripción toogle_time_entry
 # Formato: #999999 - texto - texto - ...
@@ -80,11 +84,11 @@ def extract_comentario(text: str = "") -> str | None:
     return comentario
 
 # Function to get time entries from Toggl
-def get_toggl_entries(  toggl_url_report: str | None = None, 
-                        toggl_api_key: str | None = None, 
-                        inicio: datetime | None = None, 
-                        fin: datetime | None = None
-                    ) -> pd.DataFrame:
+def get_toggl_entries_csv(  toggl_url_report: str | None = None, 
+                            toggl_api_key: str | None = None, 
+                            inicio: datetime | None = None, 
+                            fin: datetime | None = None
+                        ) -> pd.DataFrame:
     
     # [ ] get_toggl_entries: Documentar la función 
     # [X] get_toggl_entries: Ponerle el tipo de dato de salida (es dataframe)
@@ -130,6 +134,47 @@ def get_toggl_entries(  toggl_url_report: str | None = None,
         raise requests.exceptions.RequestException(
             f"Error retrieving report: {response.status_code} - {response.text}"
         )
+
+# Function to create a Redmine time entry
+def create_redmine_entry(redmine, project_id, issue_id, spent_on, hours, comentario, actividad):
+    """ 
+    [ ] create_redmine_entry: definir datos de entrada y ¿de salida?
+    [ ] create_redmine_entry: terminar la documentación de la funcion 
+    
+    Crea la entrada de tiempo en Redmine
+
+    Args:
+        ????? text (str): La cadena de texto a procesar.
+        redmine, 
+        project_id, 
+        issue_id, 
+        spent_on, 
+        hours, 
+        comentario, 
+        actividad
+
+    Returns:
+        ?????  str: (comentario)
+    
+    Los campos necesarios son ...
+        Num Redmine: o Proyecto: (*)
+        Usuario (*): ?????
+        Fecha (*): 
+        Horas (*): 
+        Comentario:
+        Actividad (*):  
+    """
+
+    time_entry = redmine.time_entry.new()
+    
+    time_entry.project_id = project_id
+    time_entry.issue_id = issue_id
+    time_entry.spent_on = spent_on.strftime("%Y-%m-%d")
+    time_entry.hours = hours
+    time_entry.comment = comentario
+    time_entry.activity = actividad
+    
+    time_entry.save()
 
 def set_toggl_tag_entries(  toggl_url_entries: str | None = None, 
                             toggl_api_key    : str | None = None,  
@@ -185,48 +230,6 @@ def set_toggl_tag_entries(  toggl_url_entries: str | None = None,
         raise requests.exceptions.RequestException(
             f"Error retrieving report: {response.status_code} - {response.text}"
         )
-
-# Function to create a Redmine time entry
-def create_redmine_entry(redmine, project_id, issue_id, spent_on, hours, comentario, actividad):
-    """ 
-    [ ] create_redmine_entry: definir datos de entrada y ¿de salida?
-    [ ] create_redmine_entry: terminar la documentación de la funcion 
-    
-    Crea la entrada de tiempo en Redmine
-
-    Args:
-        ????? text (str): La cadena de texto a procesar.
-        redmine, 
-        project_id, 
-        issue_id, 
-        spent_on, 
-        hours, 
-        comentario, 
-        actividad
-
-    Returns:
-        ?????  str: (comentario)
-    
-    Los campos necesarios son ...
-        Num Redmine: o Proyecto: (*)
-        Usuario (*): ?????
-        Fecha (*): 
-        Horas (*): 
-        Comentario:
-        Actividad (*):  
-    """
-
-    time_entry = redmine.time_entry.new()
-    
-    time_entry.project_id = project_id
-    time_entry.issue_id = issue_id
-    time_entry.spent_on = spent_on.strftime("%Y-%m-%d")
-    time_entry.hours = hours
-    time_entry.comment = comentario
-    time_entry.activity = actividad
-    
-    time_entry.save()
-
 
 # Main function
 def main():
@@ -306,7 +309,7 @@ def main():
 
         # Conectar con Toggl API
         # Get Toggl time entries en Pandas dataframe
-        toggl_entries = get_toggl_entries(
+        toggl_entries = get_toggl_entries_csv(
             toggl_url_report = toggl_url_report,
             toggl_api_key = toggl_api_key,
             inicio = args.inicio,
@@ -325,10 +328,15 @@ def main():
     # Consultar los ID de todos los proyectos y todas las actividades a los que tengo acceso
     # [ ] Probar a obtener los proyectos y actividades con usuarios que no sean "administradores" de Redmine
     proyectos = pd.DataFrame(
-        redmine.project.all(limit=1000).values("id", "identifier", "name")
+        redmine.project.all(limit=1000).values("id", "name")
         )
-    toggl_entries = toggl_entries.merge(proyectos[['name', 'id']], left_on='Project', right_on='name', how='left')
-    toggl_entries.rename(columns={'id': 'project_id'}, inplace=True)
+    toggl_entries.rename(columns = {'id': 'redmine_project_id', 
+                                    'name': 'redmine_project_name'}, 
+                         inplace=True)
+    toggl_entries = toggl_entries.merge(proyectos[['redmine_project_name', 'redmine_project_id']], 
+                                        left_on='Project', 
+                                        right_on='redmine_project_name', 
+                                        how='left')
     
     actividades = pd.DataFrame(
         redmine.enumeration.filter(resource="time_entry_activities").values("id", "name")
