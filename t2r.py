@@ -319,17 +319,23 @@ def main():
         print(f"Error: {e}")
         exit(1)
 
-    # En tiempo de Desarrollo ...
-    # Reducimos el dataframe unicamente a los pocos timeentries que tienen el tag "de_prueba"
-    
+    # Borramos los registros de tiempo del dataframe de Toggle que ya estan en Redmine (los del tag "en_redmine")
+    # etiqueta = toggl_entries['Tags'].str.contains('en_redmine')
+    # Durante las pruebas de desarrollo solo usaremos los registros Toggl con la etiqueta "de_prueba", por tanto borraremos el resto
+    etiqueta = ~toggl_entries['Tags'].str.contains('de_prueba') # con ~ se consigue la negación
+    toggl_entries.drop(toggl_entries[etiqueta].index, inplace=True)
+    if toggl_entries.empty:
+        print(f'Entre el tramo que va desde {args.inicio.strftime("%Y-%m-%d")} a {args.fin.strftime("%Y-%m-%d")}, \
+            no hay datos para enviar a Redmine, quizás porque ya tienen la marca de enviados')
+        exit(1)
     
     # Añadimos colunmnas calculadas para que la futura iteración por cada fila, sea más eficiente 
     # Extraer datos de la descripción
-    toggl_entries["num_redmine"] = toggl_entries["Description"].apply(extract_numero)
-    toggl_entries["comentario"] = toggl_entries["Description"].apply(extract_comentario)
+    toggl_entries["redmine_num"] = toggl_entries["Description"].apply(extract_numero)
+    toggl_entries["redmine_comentario"] = toggl_entries["Description"].apply(extract_comentario)
 
-    # Consultar los ID de todos los proyectos y todas las actividades a los que tengo acceso
-    # [ ] Probar a obtener los proyectos y actividades con usuarios que no sean "administradores" de Redmine
+    # Consultar los ID de todos los proyectos a los que tengo acceso
+    # [ ] Probar a obtener los proyectos con usuarios que no sean "administradores" de Redmine
     redmine_proyectos = pd.DataFrame(
         redmine.project.all(limit=1000).values("id", "name")
         )
@@ -345,18 +351,44 @@ def main():
         how      = 'left'
         )
     
-    actividades = pd.DataFrame(
+    print(toggl_entries[['Project', 
+                        'Description', 
+                        'Duration', 
+                        'Tags', 
+                        'redmine_project_name', 
+                        'redmine_project_id']].head(10))
+    
+    
+    # Consultar los ID de todas las actividades a las que tengo acceso
+    # [ ] Probar a obtener las actividades con usuarios que no sean "administradores" de Redmine
+    redmine_actividades = pd.DataFrame(
         redmine.enumeration.filter(resource="time_entry_activities").values("id", "name")
         )
-    
+    redmine_actividades.rename(
+        columns = { 'id': 'redmine_actividad_id',
+                    'name': 'redmine_actividad_name'}, 
+        inplace=True
+        )
+    toggl_entries = toggl_entries.merge(
+        redmine_actividades[['redmine_actividad_name', 'redmine_actividad_id']], 
+        left_on  = 'Tags', 
+        right_on = 'redmine_actividad_name', 
+        how      = 'left'
+        )
 
+    print(toggl_entries[['Project', 
+                        'Description', 
+                        'Duration', 
+                        'Tags', 
+                        'redmine_actividad_name', 
+                        'redmine_actividad_id'
+                        ]].head(10))
+
+    
     # print(toggl_entries[['User', 'Email', 'Client', 'Project', 'Task', 'Description', 'Billable',
                         # 'Start_date', 'Start_time', 'End_date', 'End_time', 'Duration', 'Tags',
                         # 'Currency', 'Amount', 'num_redmine', 'comentario']
                         # ].head(10))
-    print(toggl_entries[
-                        ['Project', 'Description', 'Duration','project_id']
-                        ].head(10))
     
     # print(proyectos)
     
@@ -377,7 +409,7 @@ def main():
 
         print("\n")
 
-        print(f"redmine: {row.num_redmine}")
+        """ print(f"redmine: {row.num_redmine}")
         print(f"texto: {row.comentario}")
         print(f"proyecto: {row.Project}")
 
@@ -389,7 +421,7 @@ def main():
         elif row.num_redmine is not None:
             print(f"con redmine:{row}")
         else:
-            print("Else final")
+            print("Else final") """
 
     print("Finished creating Redmine time entries.")
 
