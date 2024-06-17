@@ -32,6 +32,9 @@ from datetime import datetime, timedelta
 from base64 import b64encode
 from dotenv import dotenv_values
 
+# Mostrar todas las columnas de los dataframe
+pd.set_option('display.max_columns', None)
+
 # [ ] aclarar los import que sobran
 # [ ] arreglo de los comentarios que sobran
 # [ ] hacer log del script 
@@ -282,7 +285,7 @@ def main():
         # [ ] controlar que FIN >= INICIO
         # [ ] controlar que FIN - INICIO no es mucho tiempo (ej. ¿varios meses o años?)
         
-    except:  # argparse.ArgumentError: #or SystemExit: # type: ignore
+    except argparse.ArgumentError or SystemExit: # type: ignore
         parser.print_help()
         exit(1)
 
@@ -319,14 +322,17 @@ def main():
         print(f"Error: {e}")
         exit(1)
 
+    # Borramos las columnas que no vamos a necesitar: Billable, Client, Currency, Task, Email, User
+    toggl_entries.drop(['Billable', 'Client', 'Currency', 'Task', 'Email', 'User', 'Amount'], axis=1, inplace=True)
+    
     # Borramos los registros de tiempo del dataframe de Toggle que ya estan en Redmine (los del tag "en_redmine")
     # etiqueta = toggl_entries['Tags'].str.contains('en_redmine')
     # Durante las pruebas de desarrollo solo usaremos los registros Toggl con la etiqueta "de_prueba", por tanto borraremos el resto
     etiqueta = ~toggl_entries['Tags'].str.contains('de_prueba') # con ~ se consigue la negación
     toggl_entries.drop(toggl_entries[etiqueta].index, inplace=True)
     if toggl_entries.empty:
-        print(f'Entre el tramo que va desde {args.inicio.strftime("%Y-%m-%d")} a {args.fin.strftime("%Y-%m-%d")}, \
-            no hay datos para enviar a Redmine, quizás porque ya tienen la marca de enviados')
+        print(f'En el tramo de tiempoque va desde {args.inicio.strftime("%Y-%m-%d")} a {args.fin.strftime("%Y-%m-%d")}, \
+            no hay datos para enviar a Redmine, quizás porque ya tienen la marca de enviados (etiqueta={etiqueta})')
         exit(1)
     
     # Añadimos colunmnas calculadas para que la futura iteración por cada fila, sea más eficiente 
