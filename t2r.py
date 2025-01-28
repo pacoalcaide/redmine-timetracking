@@ -41,6 +41,8 @@ pd.set_option('display.max_columns', None)
 #       (con libreria "loguru" https://pravash-techie.medium.com/python-libraries-you-should-use-part-1-a68d38d23837)
 # [ ] probar la carga de los JSON o CSV directamente en duckdb 
 #       (a través de la libreria "dlt" https://pravash-techie.medium.com/python-libraries-you-should-use-part-1-a68d38d23837)
+# [ ] montar la versión GUI con Flutter
+        # (https://app.raindrop.io/my/0/%23flutter%20/)
 
 # Extraer info del texto de la descripción toogle_time_entry
 # Formato: #999999 - texto - texto - ...
