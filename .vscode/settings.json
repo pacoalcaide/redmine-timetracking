@@ -4,5 +4,7 @@
     "projectKey": "pacoalcaide_redmine-timetracking"
   },
   "todo-tree.tree.showCountsInTree": true,
-  "todo-tree.tree.showBadges": false
+  "todo-tree.tree.showBadges": false,
+  "IDX.aI.enableInlineCompletion": true,
+  "IDX.aI.enableCodebaseIndexing": true
 }
