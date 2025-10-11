@@ -1,0 +1,3 @@
+#FROM pacoalcaide/redmine:5.0.5
+FROM docker.io/redmine:5.0.5
+

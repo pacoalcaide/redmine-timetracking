@@ -164,5 +164,6 @@ tmp/
 .env.*
 !.env.ejemplo
 *.des.*
+!redmine_des/*.des.*
 # vinculado al comando linux highlight
 highlight.css 

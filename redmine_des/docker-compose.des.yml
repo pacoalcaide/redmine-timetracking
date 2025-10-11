@@ -1,0 +1,74 @@
+#
+# Docker Compose file for Redmine with MariaDB
+#
+services:
+  mariadb:
+    #image: docker.io/mariadb:11.4
+    #image: pacoalcaide/mariadb:11.4
+    # (If you need to build a custom image, use a Dockerfile and reference it here)
+    # Example of using build context with Dockerfile to use COPY and RUN
+    # Uncomment below to build a custom image for mariadb service
+    build:
+      context: .
+      dockerfile: dockerfile.mariadb.des.yml
+    #  args:
+    #    DATOS_INICIALES: datos_iniciales.mariadb.des.sql
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      #- MARIADB_ALLOW_EMPTY_PASSWORD=yes
+      #- MARIADB_DATABASE=redmine_bd
+      #- MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=yes
+      #- MARIADB_USER=redmine
+      #- MARIADB_PASSWORD=redmine
+      - MARIADB_ROOT_PASSWORD=admin 
+      - MARIADB_DATABASE=redmine_db
+      - MARIADB_USER=redmine
+      - MARIADB_PASSWORD=redmine
+    healthcheck:
+      # Comando para comprobar que la DB acepta conexiones
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p$$MARIADB_ROOT_PASSWORD"]
+      start_period: 30s  # Ignora fallos durante los primeros 30 segundos
+      start_interval: 5s # Frecuencia de chequeo DENTRO del start_period
+      interval: 1h       # Frecuencia de chequeo DESPUÉS del start_period
+      retries: 5         # Número de reintentos antes de considerar el servicio como 'unhealthy'
+      timeout: 3s        # Tiempo de espera para la respuesta del comando
+    #networks:
+    #  - redmine_network
+  redmine:
+    #image: docker.io/redmine:5.0.5
+    #image: pacoalcaide/redmine:5-alpine3.21
+    build:
+      context: .
+      dockerfile: dockerfile.redmine.des.yml
+    ports:
+      - '80:3000'
+    volumes:
+      - redmine_data:/usr/src/redmine/files
+    depends_on:
+      mariadb:
+        condition: service_healthy  # Redmine solo iniciará si MariaDB reporta un estado 'healthy'
+    environment:
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      #- REDMINE_ALLOW_EMPTY_PASSWORD=yes
+      #- REDMINE_DATABASE_HOST=mariadb
+      #- REDMINE_DATABASE_PORT_NUMBER=3306
+      #- REDMINE_DATABASE_NAME=redmine_db
+      #- REDMINE_DATABASE_USER=redmine
+      #- REDMINE_DATABASE_PASSWORD=redmine
+      - REDMINE_DB_MYSQL=mariadb
+      - REDMINE_DB_PORT=3306
+      - REDMINE_DB_DATABASE=redmine_db
+      - REDMINE_DB_USERNAME=redmine
+      - REDMINE_DB_PASSWORD=redmine
+    #networks:
+    #  - redmine_network
+volumes:
+  mariadb_data:
+    driver: local
+  redmine_data:
+    driver: local
+#networks:
+#  redmine_network:
+#    driver: bridge

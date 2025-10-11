@@ -1,0 +1,8 @@
+#FROM pacoalcaide/mariadb:11.4
+FROM docker.io/mariadb:11.4
+
+# Copiar datos iniciales
+# Al arrancar el contenedor, los scripts en /docker-entrypoint-initdb.d/
+# serán ejecutados para inicializar la base de datos
+#ARG DATOS_INICIALES
+#COPY ${DATOS_INICIALES} /docker-entrypoint-initdb.d/
