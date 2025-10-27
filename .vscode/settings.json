@@ -1,39 +1,41 @@
 {
-  "sonarlint.connectedMode.project": {
-    "connectionId": "pacoalcaide",
-    "projectKey": "pacoalcaide_redmine-timetracking"
-  },
-  "todo-tree.tree.showCountsInTree": true,
-  "todo-tree.tree.showBadges": false,
-<<<<<<< Updated upstream
-  "IDX.aI.enableInlineCompletion": true,
-  "IDX.aI.enableCodebaseIndexing": true
-=======
-  "sqltools.connections": [
-    {
-      "mysqlOptions": {
-        "authProtocol": "default",
-        "enableSsl": "Disabled"
-      },
-      "previewLimit": 50,
-      "server": "10.2.102.252",
-      "port": 3306,
-      "driver": "MySQL",
-      "name": "redmine",
-      "database": "redmine",
-      "username": "redmine",
-      "password": "redmine"
+    "python.defaultInterpreterPath": "./.venv/bin/python",
+
+    "sonarlint.connectedMode.project": {
+        "connectionId": "pacoalcaide",
+        "projectKey": "pacoalcaide_redmine-timetracking"
     },
-    {
-      "previewLimit": 50,
-      "server": "sigdipucordoba_desarrollo.eprinsa.es",
-      "port": 5432,
-      "driver": "PostgreSQL",
-      "name": "sigdipucordoba_desarrollo.eprinsa.es",
-      "database": "geodipco",
-      "username": "postgres",
-      "password": "postgres"
-    }
-  ]
->>>>>>> Stashed changes
+
+    "todo-tree.tree.showCountsInTree": true,
+    "todo-tree.tree.showBadges": false,
+
+    "IDX.aI.enableInlineCompletion": true,
+    "IDX.aI.enableCodebaseIndexing": true,
+    
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "10.2.102.252",
+            "port": 3306,
+            "driver": "MySQL",
+            "name": "redmine",
+            "database": "redmine",
+            "username": "redmine",
+            "password": "redmine"
+        },
+        {
+            "previewLimit": 50,
+            "server": "sigdipucordoba_desarrollo.eprinsa.es",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "sigdipucordoba_desarrollo.eprinsa.es",
+            "database": "geodipco",
+            "username": "postgres",
+            "password": "postgres"
+        }
+    ]
 }
