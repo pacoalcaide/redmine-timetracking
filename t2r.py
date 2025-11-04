@@ -36,10 +36,11 @@ from dotenv import dotenv_values
 pd.set_option('display.max_columns', None)
 
 # [ ] OBLIGATORIO
-# [ ] - aclarar los import que sobran
-# [ ] - arreglo de los comentarios que sobran
+# [ ] - valorar solución para los limites de la API de Toggl (30 requests/hora - https://support.toggl.com/en/articles/11484112-api-webhook-limits)
 # [ ] - probar la carga de los JSON o CSV directamente en duckdb 
 #       (a través de la libreria "dlt" https://pravash-techie.medium.com/python-libraries-you-should-use-part-1-a68d38d23837)
+# [ ] - aclarar los import que sobran
+# [ ] - arreglo de los comentarios que sobran
 # [ ] - redmine_dev: cargar manualmente los datos de prueba
 # [ ] - redmine_dev: salvar la imagen con los datos de prueba en docker hub
 # [ ] IMPORTANTE
